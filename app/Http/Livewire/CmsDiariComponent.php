@@ -63,14 +63,20 @@ class CmsDiariComponent extends Component
 
         $this->closeDelete();
     }
-    // diaries that still miss their English title or image description
+    // diaries whose English title or image description is still missing, or only a copy of the Indonesian text
     public function untranslatedDiaries(){
         return DB::table('greendiary')->where(function ($query) {
-            $query->where('titleEN', '')->orWhereNull('titleEN')->orWhere('imgDescEN', '')->orWhereNull('imgDescEN');
+            $query->where('titleEN', '')->orWhereNull('titleEN')->orWhereColumn('titleEN', 'titleID')
+                ->orWhere('imgDescEN', '')->orWhereNull('imgDescEN')->orWhereColumn('imgDescEN', 'imgDescID');
         });
     }
 
-    // fills the missing English titles and descriptions from the Indonesian ones, existing English text is kept
+    // the same test in php, case-insensitive like the database comparison above
+    protected function needsTranslation($en, $id){
+        return blank($en) || Str::lower(trim($en)) === Str::lower(trim($id));
+    }
+
+    // fills the missing English titles and descriptions from the Indonesian ones, real English text is kept
     public function translateAll(){
         if (!session('id')) {
             abort(403);
@@ -81,10 +87,10 @@ class CmsDiariComponent extends Component
         foreach ($this->untranslatedDiaries()->orderBy('id')->get(['id', 'titleID', 'titleEN', 'imgDescID', 'imgDescEN'])->chunk(25) as $diaries) {
             $texts = [];
             foreach ($diaries as $diary) {
-                if (blank($diary->titleEN) && filled($diary->titleID)) {
+                if ($this->needsTranslation($diary->titleEN, $diary->titleID) && filled($diary->titleID)) {
                     $texts[$diary->id.'.title'] = $diary->titleID;
                 }
-                if (blank($diary->imgDescEN) && filled($diary->imgDescID)) {
+                if ($this->needsTranslation($diary->imgDescEN, $diary->imgDescID) && filled($diary->imgDescID)) {
                     $texts[$diary->id.'.imgDesc'] = $diary->imgDescID;
                 }
             }
@@ -115,6 +121,9 @@ class CmsDiariComponent extends Component
     public function render()
     {
         $diary = $this->getDiary();
+        foreach ($diary as $item) {
+            $item->missingEnglish = $this->needsTranslation($item->titleEN, $item->titleID);
+        }
         $untranslated = $this->untranslatedDiaries()->count();
         return view('livewire.cms-diari-component', compact('diary', 'untranslated'));
     }

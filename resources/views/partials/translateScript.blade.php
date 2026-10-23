@@ -4,12 +4,17 @@
         return root && root.querySelector('[wire\\:model\\.defer="' + name + '"], [wire\\:model="' + name + '"]');
     }
 
+    function cmsTranslateText(root, editor, name) {
+        const input = editor ? null : cmsTranslateInput(root, name);
+        return (editor ? editor.getContent({ format: 'text' }) : (input ? input.value : '')).trim().toLowerCase();
+    }
+
     function cmsTranslate($wire, field, button) {
+        const root = button.closest('[wire\\:id]');
         const source = window.tinymce && tinymce.get(field + 'ID');
-        const target = window.tinymce && tinymce.get(field + 'EN');
-        const input = target ? null : cmsTranslateInput(button.closest('[wire\\:id]'), field + 'EN');
-        const current = target ? target.getContent({ format: 'text' }) : (input ? input.value : '');
-        if (current.trim() !== '' && !confirm('Replace the current English text with a new translation?')) {
+        const current = cmsTranslateText(root, window.tinymce && tinymce.get(field + 'EN'), field + 'EN');
+        // only ask when there is real English text, not empty or a copy of the Indonesian
+        if (current !== '' && current !== cmsTranslateText(root, source, field + 'ID') && !confirm('Replace the current English text with a new translation?')) {
             return Promise.resolve();
         }
         // rich text editors only sync to livewire on blur, so send their content along

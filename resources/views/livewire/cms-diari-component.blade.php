@@ -11,7 +11,7 @@
             @if ($untranslated)
                 {{-- fills the English text of every diary that has none yet, see CmsDiariComponent::translateAll --}}
                 <button type="button" wire:loading.attr="disabled" wire:target="translateAll"
-                    wire:click="translateAll" onclick="confirm('Translate the missing English text of {{ $untranslated }} {{ Str::plural('diary', $untranslated) }} with DeepL? Existing English text is kept.') || event.stopImmediatePropagation()"
+                    wire:click="translateAll" onclick="confirm('Translate {{ $untranslated }} {{ Str::plural('diary', $untranslated) }} with DeepL? Only English text that is empty or still the Indonesian text is replaced.') || event.stopImmediatePropagation()"
                     class="inline-flex items-center flex-shrink-0 whitespace-nowrap px-4 sm:py-2 py-1 text-sm rounded border border-gray-300 dark:border-opacity-20 text-newgray-900 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-newgray-700">
                     <svg wire:loading wire:target="translateAll" class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -67,7 +67,7 @@
                         <tr>
                             <td class="px-6 py-4 break-words text-sm font-bold text-newgray-700 dark:text-gray-300">
                                 <a href="{{ url('/cms/diary/'.$item->id) }}">{{ $item->titleEN ?: $item->titleID }}</a>
-                                @if (!$item->titleEN)
+                                @if ($item->missingEnglish)
                                     <span class="block text-xs italic text-gray-400">No English yet</span>
                                 @endif
                             </td>

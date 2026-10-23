@@ -9,9 +9,11 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
 /**
- * Local Green Diary entries written in Indonesian only (English left empty),
- * to try the "Translate missing English" button in the CMS. Running it again
- * replaces these entries; other diaries are left alone.
+ * Local Green Diary entries written in Indonesian only, to try the "Translate
+ * missing English" button in the CMS. Like most diaries in production, half of
+ * them have the Indonesian text copied into the English fields, the other half
+ * leave English empty. Running it again replaces these entries; other diaries
+ * are left alone.
  *
  *   php artisan db:seed --class=DummyDiaryIndonesianSeeder
  */
@@ -41,17 +43,18 @@ class DummyDiaryIndonesianSeeder extends Seeder
         $now = Carbon::now('Asia/Jakarta');
 
         DB::table('greendiary')->whereIn('slugID', array_map(fn ($entry) => Str::slug($entry[1], '-'), $entries))->delete();
-        foreach ($entries as [$date, $title, $description, $img]) {
+        foreach ($entries as $i => [$date, $title, $description, $img]) {
+            $copied = $i % 2 === 1;
             if (!File::exists($photos.'/'.$img)) {
                 File::copy(public_path('assets/'.$img), $photos.'/'.$img);
             }
             DB::table('greendiary')->insert([
                 'titleID' => $title,
-                'titleEN' => '',
+                'titleEN' => $copied ? $title : '',
                 'slugID' => Str::slug($title, '-'),
-                'slugEN' => '',
+                'slugEN' => $copied ? Str::slug($title, '-') : '',
                 'imgDescID' => $description,
-                'imgDescEN' => '',
+                'imgDescEN' => $copied ? $description : '',
                 'img' => $img,
                 'publishdate' => $date,
                 'isActive' => 1,
